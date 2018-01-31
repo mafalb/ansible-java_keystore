@@ -1,0 +1,39 @@
+
+- hosts: localhost
+  vars:
+    password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          encrypted string...
+  roles:
+
+    - name: java_keystore/selfsigned
+      java_keystore:
+        selfsigned:
+          wso2carbon:
+            validity: 825
+            dest: /tmp/gugu.jks
+            dn: "CN=bla.example.com, O=X,L=Y,ST=W,C=Z"
+            san: dns:bla.example.com
+
+    - name: java_keystore/export
+      java_keystore:
+        export:
+          wso2carbon:
+            keystore: /tmp/gugu.jks
+            dest: /tmp/gugu.cert
+
+    - name: java_keystore/import
+      java_keystore:
+        import:
+          wso2carbon:
+            keystore: /tmp/client-truststore.jks
+            password: "{{ password }}"
+            src: /tmp/gugu.cert
+          ca1:
+            keystore: /tmp/client-truststore.jks
+            password: "{{ password }}"
+            src: files/apigw/ca1.cert
+          ca2:
+            keystore: /tmp/client-truststore.jks
+            password: "{{ password }}"
+            src: files/apigw/ca2.cert
