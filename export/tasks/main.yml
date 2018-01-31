@@ -1,0 +1,12 @@
+---
+
+- name: create password file
+  copy:
+    content: "{{ password }}"
+    dest: /tmp/.java_keystore
+
+- name: export certificate
+  command: keytool -exportcert -alias {{ item.key }} -file {{ item.value.dest }} -rfc -keystore {{ item.value.keystore }} -storepass:file /tmp/.java_keystore
+  args:
+    creates: "{{ item.value.dest }}"
+  with_dict: "{{ java_keystore.export }}"

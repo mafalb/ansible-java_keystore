@@ -1,0 +1,12 @@
+---
+
+- name: create password file
+  copy:
+    content: "{{ password }}"
+    dest: /tmp/.java_keystore
+
+- name: create keystore
+  command: keytool -genkeypair -alias {{ item.key }} -keyalg {{ item.value.keyalg|default('rsa') }} -keysize {{ item.value.keysize|default(2048) }} -ext SAN={{ item.value.san }} -ext KU=digitalSignature,keyEncipherment,dataEncipherment -ext EKU=serverAuth,clientAuth -ext BC:critical=ca:false -dname "{{ item.value.dn }}" -validity {{ item.value.validity|default(825) }} -keystore {{ item.value.dest }} -keypass:file /tmp/.java_keystore -storepass:file /tmp/.java_keystore
+  args:
+    creates: /tmp/gugu.jks
+  with_dict: "{{ java_keystore.selfsigned }}"
