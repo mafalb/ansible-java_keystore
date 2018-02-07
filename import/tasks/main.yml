@@ -2,11 +2,10 @@
 
 - name: import certificate into truststore
   java_cert:
-    cert_alias: "{{ item.key }}"
-    cert_path: "{{ item.value.src }}"
-    keystore_path: "{{ item.value.keystore }}"
-    keystore_pass: "{{ item.value.password }}"
+    executable: "{{ java.home }}/bin/keytool"
+    cert_alias: "{{ data.alias }}"
+    cert_path: "{{ data.src }}"
+    keystore_path: "{{ data.keystore }}"
+    keystore_pass: "{{ data.password }}"
     keystore_create: yes
     state: present
-  with_dict: "{{ java_keystore.import }}"
-

@@ -1,12 +1,36 @@
 ---
 
+- name: check if keystore exists
+  stat:
+    path: "{{ data.dest }}"
+  register: _java_keystore_exists
+  changed_when: no
+
 - name: create password file
+  tempfile:
+    state: file
+  register: _java_keystore_tempfile
+  check_mode: no
+  changed_when: no
+
+- debug: var=_java_keystore_exists
+- debug: var=_java_keystore_tempfile
+- debug: var=data.password
+
+- name: create the temporary password file
   copy:
-    content: "{{ password }}"
-    dest: /tmp/.java_keystore
+    content: "{{ data.password }}"
+    dest: "{{ _java_keystore_tempfile.path }}"
+  when: _java_keystore_exists.stat.exists == false
 
 - name: create keystore
-  command: keytool -genkeypair -alias {{ item.key }} -keyalg {{ item.value.keyalg|default('rsa') }} -keysize {{ item.value.keysize|default(2048) }} -ext SAN={{ item.value.san }} -ext KU=digitalSignature,keyEncipherment,dataEncipherment -ext EKU=serverAuth,clientAuth -ext BC:critical=ca:false -dname "{{ item.value.dn }}" -validity {{ item.value.validity|default(825) }} -keystore {{ item.value.dest }} -keypass:file /tmp/.java_keystore -storepass:file /tmp/.java_keystore
+  command: '{{ java.home }}/bin/keytool -genkeypair -alias {{ data.alias }} -keyalg {{ data.keyalg|default("rsa") }} -keysize {{ data.keysize|default(2048) }} -ext SAN={{ data.san }} -ext KU=digitalSignature,keyEncipherment,dataEncipherment -ext EKU=serverAuth,clientAuth -ext BC:critical=ca:false -dname "{{ data.dn }}" -validity {{ data.validity|default(825) }} -keystore {{ data.dest }} -keypass:file {{ _java_keystore_tempfile.path }} -storepass:file {{ _java_keystore_tempfile.path }}'
   args:
-    creates: /tmp/gugu.jks
-  with_dict: "{{ java_keystore.selfsigned }}"
+    creates: "{{ data.dest }}"
+
+- name: remove tempfile
+  file:
+    path: "{{ _java_keystore_tempfile.path }}"
+    state: absent
+  changed_when: no
+  check_mode: no

@@ -1,12 +1,25 @@
 ---
 
+- name: check if certificate exists
+  stat:
+    path: "{{ data.dest }}"
+  register: _java_cert_exists
+  changed_when: no
+  check_mode: no
+
 - name: create password file
-  copy:
-    content: "{{ password }}"
-    dest: /tmp/.java_keystore
+  tempfile:
+    state: file
+  register: _java_keystore_tempfile
+  changed_when: no
+  check_mode: no
+
+- copy:
+    content: "{{ data.password }}"
+    dest: "{{ _java_keystore_tempfile.path }}"
+  when: _java_cert_exists.stat.exists == false
 
 - name: export certificate
-  command: keytool -exportcert -alias {{ item.key }} -file {{ item.value.dest }} -rfc -keystore {{ item.value.keystore }} -storepass:file /tmp/.java_keystore
+  command: '{{ java.home }}/bin/keytool -exportcert -alias {{ data.alias }} -file {{ data.dest }} -rfc -keystore {{ data.keystore }} -storepass:file {{ _java_keystore_tempfile.path }}'
   args:
-    creates: "{{ item.value.dest }}"
-  with_dict: "{{ java_keystore.export }}"
+    creates: "{{ data.dest }}"
